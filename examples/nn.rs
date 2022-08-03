@@ -46,8 +46,8 @@ fn mouseclick(mut commands: Commands, mouse_input: Res<Input<MouseButton>>, wind
     let win = windows.get_primary().unwrap();
     if mouse_input.just_pressed(MouseButton::Left) {
         if let Some(mut pos) = win.cursor_position() {
-            pos.x = pos.x - win.width() / 2.0;
-            pos.y = pos.y - win.height() / 2.0;
+            pos.x -= win.width() / 2.0;
+            pos.y -= win.height() / 2.0;
             commands
                 .spawn()
                 .insert(MoveTowards)
@@ -75,7 +75,7 @@ fn move_to(
     for mut transform in &mut query {
         let pos = transform.translation.truncate();
         if let Some(nearest) = treeaccess.tree.nearest_neighbor(&pos.to_array()) {
-            let towards = nearest.vec - pos;
+            let towards = nearest.pos - pos;
             transform.translation +=
                 (towards.normalize() * time.delta_seconds() * 64.0).extend(0.0);
         }

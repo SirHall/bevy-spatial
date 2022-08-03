@@ -2,6 +2,7 @@
 //!
 //! Quickstart using the `kdtree` feature:
 //! ```rust
+//! # use bevy::prelude::*;
 //! use bevy_spatial::{KDTreeAccess2D, KDTreePlugin2D, SpatialAccess};
 //!
 //! #[derive(Component)]
@@ -17,7 +18,7 @@
 //! type NNTree = KDTreeAccess2D<TrackedByKDTree>; // type alias for later
 //!
 //! fn use_neighbour(tree: Res<NNTree>){
-//!     if let Some((pos, entity)) = tree.nearest_neighbour(Vec2::ZERO) {
+//!     if let Some((pos, entity)) = tree.nearest_neighbour(Vec3::ZERO) {
 //!         // pos: Vec3
 //!         // do something with the nearest entity here
 //!     }
@@ -26,23 +27,36 @@
 //!
 //! For more details see [Examples](https://github.com/laundmo/bevy-spatial/tree/main/examples)
 
+#![warn(missing_docs)]
+#![warn(rustdoc::missing_doc_code_examples)]
+
+mod aabb_impls;
 mod common;
-#[cfg(feature = "kdtree")]
-mod kdtree;
 mod plugin;
 mod resources_components;
-#[cfg(feature = "rstar")]
-mod rtree;
 mod spatial_access;
 
 pub use self::{
-    common::{EntityPoint, EntityPoint2D, EntityPoint3D},
+    aabb_impls::{Cube, Point2d, Point3d, RectAABB},
+    common::AABB,
     plugin::SpatialPlugin,
     spatial_access::SpatialAccess,
 };
 
+#[cfg(feature = "debug")]
+mod debug_aabb;
+#[cfg(feature = "debug")]
+mod debug_draw_utils;
+#[cfg(feature = "debug")]
+pub use self::debug_aabb::DebugAABB;
+
+#[cfg(feature = "kdtree")]
+mod kdtree;
 #[cfg(feature = "kdtree")]
 pub use self::kdtree::{KDTreeAccess2D, KDTreePlugin2D};
+
+#[cfg(feature = "rstar")]
+mod rtree;
 
 #[cfg(feature = "rstar")]
 pub use self::rtree::{

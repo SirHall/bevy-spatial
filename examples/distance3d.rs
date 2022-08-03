@@ -85,8 +85,8 @@ fn setup(
 fn mouse(windows: Res<Windows>, mut query: Query<&mut Transform, With<Cursor>>) {
     let win = windows.get_primary().unwrap();
     if let Some(mut pos) = win.cursor_position() {
-        pos.x = pos.x - win.width() / 2.0;
-        pos.y = pos.y - win.height() / 2.0;
+        pos.x -= win.width() / 2.0;
+        pos.y -= win.height() / 2.0;
         let mut transform = query.single_mut();
         transform.translation = pos.extend(0.0);
     }
@@ -100,8 +100,8 @@ fn color(
 ) {
     let win = windows.get_primary().unwrap();
     if let Some(mut pos) = win.cursor_position() {
-        pos.x = pos.x - win.width() / 2.0;
-        pos.y = pos.y - win.height() / 2.0;
+        pos.x -= win.width() / 2.0;
+        pos.y -= win.height() / 2.0;
 
         for (_, entity) in treeaccess.within_distance(pos.extend(0.0), 100.0) {
             let mut handle = query.get_mut(entity).unwrap();

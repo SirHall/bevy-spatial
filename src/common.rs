@@ -1,4 +1,7 @@
+use std::fmt::Debug;
+
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
+use num_traits::{Bounded, Num, Signed};
 
 use crate::resources_components::TimestepElapsed;
 
@@ -17,117 +20,37 @@ where
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct EntityPoint<Unit>
-where
-    Unit: PartialEq,
-{
-    pub vec: Unit,
-    pub entity: Entity,
+/// Empty trait for numbers. A copy of R*-tree Scalar.
+pub trait Scalar: Bounded + Num + Clone + Copy + Signed + PartialOrd + Debug {}
+
+impl<S> Scalar for S where S: Bounded + Num + Clone + Copy + Signed + PartialOrd + Debug {}
+
+/// Empty trait for the Unit generic - as that could either be Vec2 or Vec3.
+pub trait Vec: Clone + PartialEq + Debug + Default {}
+
+/// Blanket Vec impl for everything that matches the where clause.
+impl<T> Vec for T where T: Clone + PartialEq + Debug + Default {}
+
+pub trait AABB {
+    /// Type of the glam Vec used in this AABB
+    type VecType: Vec;
+    /// Type of the scalars used for distances etc. Should match the VecType's numerical type.
+    type ScalarType: Scalar;
+
+    /// Center point of the AABB
+    fn point(&self) -> Self::VecType;
+    /// Area of the AABB
+    fn area(&self) -> Self::ScalarType;
+    /// Squared distance to another AABB (based on `AABB.point()`)
+    //TODO: how to inter-doc ref?
+    fn distance_squared(&self, other: &Self) -> Self::ScalarType;
+    /// Whether the AABB fully contains another AABB
+    fn contains(&self, other: &Self) -> bool;
+    /// The AABB created by the overlap.
+    fn overlap(&self, other: &Self) -> Option<&Self>;
 }
 
-pub type EntityPoint2D = EntityPoint<Vec2>;
-
-pub type EntityPoint3D = EntityPoint<Vec3>;
-
-impl<Unit> From<(Unit, Entity)> for EntityPoint<Unit>
-where
-    Unit: PartialEq,
-{
-    fn from(thing: (Unit, Entity)) -> Self {
-        EntityPoint {
-            vec: thing.0,
-            entity: thing.1,
-        }
-    }
-}
-
-impl<Unit> From<&(Unit, Entity)> for EntityPoint<Unit>
-where
-    Unit: PartialEq + Copy,
-{
-    fn from(thing: &(Unit, Entity)) -> Self {
-        EntityPoint {
-            vec: thing.0.clone(),
-            entity: thing.1,
-        }
-    }
-}
-
-impl<Unit> From<Entity> for EntityPoint<Unit>
-where
-    Unit: PartialEq + Default,
-{
-    fn from(entity: Entity) -> Self {
-        EntityPoint {
-            vec: Unit::default(),
-            entity,
-        }
-    }
-}
-
-// truncating Vec3 to EntityPoint2D
-
-// reference
-impl From<&(Vec3, Entity)> for EntityPoint2D {
-    fn from(thing: &(Vec3, Entity)) -> Self {
-        EntityPoint2D {
-            vec: thing.0.truncate(),
-            entity: thing.1,
-        }
-    }
-}
-
-impl From<&(Entity, Vec3)> for EntityPoint2D {
-    fn from(thing: &(Entity, Vec3)) -> Self {
-        EntityPoint2D {
-            vec: thing.1.truncate(),
-            entity: thing.0,
-        }
-    }
-}
-
-// value
-impl From<(Vec3, Entity)> for EntityPoint2D {
-    fn from(thing: (Vec3, Entity)) -> Self {
-        EntityPoint2D {
-            vec: thing.0.truncate(),
-            entity: thing.1,
-        }
-    }
-}
-
-impl From<(Entity, Vec3)> for EntityPoint2D {
-    fn from(thing: (Entity, Vec3)) -> Self {
-        EntityPoint2D {
-            vec: thing.1.truncate(),
-            entity: thing.0,
-        }
-    }
-}
-
-// the compiler wont allow these to be generic??
-
-impl From<(&Transform, Entity)> for EntityPoint2D {
-    fn from(thing: (&Transform, Entity)) -> Self {
-        Self::from((thing.0.translation, thing.1))
-    }
-}
-
-impl From<(Entity, &Transform)> for EntityPoint2D {
-    fn from(thing: (Entity, &Transform)) -> Self {
-        Self::from((thing.1.translation, thing.0))
-    }
-}
-
-impl From<(&Transform, Entity)> for EntityPoint3D {
-    fn from(thing: (&Transform, Entity)) -> Self {
-        Self::from((thing.0.translation, thing.1))
-    }
-}
-
-impl From<(Entity, &Transform)> for EntityPoint3D {
-    fn from(thing: (Entity, &Transform)) -> Self {
-        Self::from((thing.1.translation, thing.0))
-    }
+pub trait AABBExtras2D {
+    type AABBrel: AABB;
+    fn corners(&self) -> [AABBExtras2D::AABBrel::VecType; 2];
 }
