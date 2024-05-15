@@ -26,6 +26,29 @@ type GlamVec<S> = <<S as SpatialAccess>::Point as SpatialPoint>::Vec;
 
 pub(crate) struct AutoT<SpatialDS>(PhantomData<SpatialDS>);
 
+#[allow(clippy::needless_pass_by_value)]
+pub fn auto_t_update_ds<SpatialDS>(
+    mut tree: ResMut<SpatialDS>,
+    changed: Query<(Entity, Ref<Transform>), With<SpatialDS::Comp>>,
+    mut removed: RemovedComponents<SpatialDS::Comp>,
+) where
+    GlamVec<SpatialDS>: VecFromTransform,
+    SpatialDS: UpdateSpatialAccess + Resource,
+    <SpatialDS as SpatialAccess>::Point: From<(Entity, GlamVec<SpatialDS>)>,
+    SpatialDS::Comp: Component,
+{
+    tree.update(
+        changed.iter().map(|(e, ch)| {
+            let changed = ch.is_changed();
+            (
+                (e, GlamVec::<SpatialDS>::from_transform(ch.into_inner())).into(),
+                changed,
+            )
+        }),
+        removed.read(),
+    );
+}
+
 impl<SpatialDS> AutoT<SpatialDS>
 where
     GlamVec<SpatialDS>: VecFromTransform,
@@ -35,20 +58,11 @@ where
 {
     #[allow(clippy::needless_pass_by_value)]
     fn update_ds(
-        mut tree: ResMut<SpatialDS>,
+        tree: ResMut<SpatialDS>,
         changed: Query<(Entity, Ref<Transform>), With<SpatialDS::Comp>>,
-        mut removed: RemovedComponents<SpatialDS::Comp>,
+        removed: RemovedComponents<SpatialDS::Comp>,
     ) {
-        tree.update(
-            changed.iter().map(|(e, ch)| {
-                let changed = ch.is_changed();
-                (
-                    (e, GlamVec::<SpatialDS>::from_transform(ch.into_inner())).into(),
-                    changed,
-                )
-            }),
-            removed.read(),
-        );
+        auto_t_update_ds(tree, changed, removed);
     }
 
     pub fn build(app: &mut App, schedule: impl ScheduleLabel, set: impl SystemSet) {
