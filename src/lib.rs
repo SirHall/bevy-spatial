@@ -36,6 +36,7 @@
 pub mod point;
 mod spatial_access;
 pub use self::spatial_access::SpatialAccess;
+pub use self::spatial_access::UpdateSpatialAccess;
 
 use bevy::prelude::Component;
 mod timestep;
